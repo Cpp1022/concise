@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented here.
 
@@ -6,6 +6,7 @@ All notable changes to this project will be documented here.
 
 ### Added
 
+- Skill-suite layout with `concise/` and `concise-default/`.
 - Initial `concise` Codex skill.
 - Chinese ultra-compressed response rules.
 - `lite` and `ultra` intensity levels.

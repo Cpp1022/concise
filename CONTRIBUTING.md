@@ -1,4 +1,4 @@
-# Contributing
+﻿# Contributing
 
 Thanks for improving `concise`.
 
@@ -6,7 +6,9 @@ Thanks for improving `concise`.
 
 This repository contains one Codex skill:
 
-- `SKILL.md`: the skill instructions
+- `concise/SKILL.md`: the response-style skill instructions
+- `concise-default/SKILL.md`: the default-on setup skill
+- `concise-default/scripts/`: the shell-backed default-on command
 - `README.md`: user-facing installation and usage docs
 
 Keep changes small and aligned with the skill behavior.
@@ -15,7 +17,7 @@ Keep changes small and aligned with the skill behavior.
 
 Before opening a PR:
 
-1. Read `SKILL.md` and confirm the README still matches it.
+1. Read `concise/SKILL.md` and `concise-default/SKILL.md`; confirm the README still matches them.
 2. Keep all Markdown files encoded as UTF-8.
 3. Avoid adding generated files, editor backups, or local config.
 
@@ -31,4 +33,4 @@ Include:
 
 - what changed
 - why it changed
-- whether `README.md` and `SKILL.md` still match
+- whether `README.md` and the skill files still match
