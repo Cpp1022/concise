@@ -10,5 +10,7 @@ All notable changes to this project will be documented here.
 - Chinese ultra-compressed response rules.
 - `lite` and `ultra` intensity levels.
 - Persistence and exit commands.
+- `concise-default` command for enabling concise mode in new Cursor, Claude Code, and Codex sessions.
+- Codex context-splicing documentation for `~/.codex/instructions.md`.
 - Safety and clarity boundaries.
 - README, MIT license, contribution guide, and security policy.

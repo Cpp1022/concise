@@ -17,16 +17,43 @@ Use it when you want an agent to:
 
 ## Install
 
-Copy this repository's `SKILL.md` into your local Codex skills directory:
+Copy this repository's `SKILL.md` into your local Codex skills directory.
 
-```text
-~/.codex/skills/concise/SKILL.md
+### Windows
+
+```powershell
+mkdir $env:USERPROFILE\.codex\skills\concise -Force
+copy SKILL.md $env:USERPROFILE\.codex\skills\concise\SKILL.md
 ```
 
-On Windows, that is typically:
+Optional default-on command:
 
-```text
-C:\Users\<you>\.codex\skills\concise\SKILL.md
+```powershell
+mkdir $env:USERPROFILE\.codex\bin -Force
+copy bin\concise-default.py $env:USERPROFILE\.codex\bin\concise-default.py
+copy bin\concise-default.cmd $env:USERPROFILE\.codex\bin\concise-default.cmd
+
+mkdir $env:USERPROFILE\.codex\skills\concise-default -Force
+copy skills\concise-default\SKILL.md $env:USERPROFILE\.codex\skills\concise-default\SKILL.md
+```
+
+Then add `~/.codex/bin` to your `PATH`, or run the wrapper by full path.
+
+### Unix-like
+
+```sh
+mkdir -p ~/.codex/skills/concise
+cp SKILL.md ~/.codex/skills/concise/SKILL.md
+```
+
+Optional default-on command:
+
+```sh
+mkdir -p ~/.codex/bin ~/.codex/skills/concise-default
+cp bin/concise-default.py ~/.codex/bin/concise-default.py
+cp bin/concise-default.sh ~/.codex/bin/concise-default
+chmod +x ~/.codex/bin/concise-default
+cp skills/concise-default/SKILL.md ~/.codex/skills/concise-default/SKILL.md
 ```
 
 ## Trigger
@@ -47,6 +74,32 @@ The mode persists across turns until the user says:
 - `stop concise`
 - `normal mode`
 
+## Default-On Command
+
+`concise-default` makes new agent sessions start in concise mode.
+
+```sh
+concise-default on ultra
+concise-default status
+concise-default off
+```
+
+Valid levels: `lite`, `ultra`.
+
+What it writes:
+
+- Cursor: `~/.cursor/rules/concise.mdc`
+- Claude Code: marked block in `~/.claude/CLAUDE.md`
+- Codex CLI: `~/.codex/instructions.md`
+- Saved level: `~/.config/concise/config`
+
+Codex detail: `concise-default on` writes the full concise skill body into `~/.codex/instructions.md`. New Codex sessions splice that file into `base_instructions`. It does not change the current conversation retroactively.
+
+`concise-default status` separates two Codex states:
+
+- `Codex CLI: ON`: `~/.codex/instructions.md` exists.
+- `Codex App: ON`: the most recent Codex session appears to include that instruction text.
+
 ## Levels
 
 - `lite`: expression compression only
@@ -66,6 +119,12 @@ The skill intentionally relaxes compression when clarity matters more:
 - explicit requests for analysis or edge cases
 
 Code blocks, commit messages, and PR bodies stay normal unless the user asks to compress them.
+
+## Test
+
+```sh
+python -m unittest discover -s tests -v
+```
 
 ## Example
 
@@ -92,6 +151,9 @@ inline obj prop -> new ref -> re-render. Wrap with useMemo.
 ```text
 .
 |-- SKILL.md
+|-- bin/
+|-- skills/
+|-- tests/
 |-- README.md
 |-- LICENSE
 `-- .gitignore
