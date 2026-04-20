@@ -5,3 +5,4 @@ Thumbs.db
 *.swp
 __pycache__/
 *.pyc
+reports/
