@@ -9,7 +9,9 @@ from pathlib import Path
 
 HOME = Path.home()
 CONFIG_FILE = HOME / ".config" / "concise" / "config"
-SKILL_SOURCE = HOME / ".codex" / "skills" / "concise" / "SKILL.md"
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_SKILL_SOURCE = SCRIPT_DIR.parent.parent / "concise" / "SKILL.md"
+CODEX_SKILL_SOURCE = HOME / ".codex" / "skills" / "concise" / "SKILL.md"
 CURSOR_RULE = HOME / ".cursor" / "rules" / "concise.mdc"
 CLAUDE_MD = HOME / ".claude" / "CLAUDE.md"
 CODEX_INSTRUCTIONS = HOME / ".codex" / "instructions.md"
@@ -40,10 +42,21 @@ def save_level(level: str) -> None:
     CONFIG_FILE.write_text(level + "\n", encoding="utf-8", newline="\n")
 
 
+def get_skill_source() -> Path:
+    for candidate in (REPO_SKILL_SOURCE, CODEX_SKILL_SOURCE):
+        if candidate.exists():
+            return candidate
+    return REPO_SKILL_SOURCE
+
+
 def read_skill_body() -> str:
-    if not SKILL_SOURCE.exists():
-        raise SystemExit(f"Error: source not found: {SKILL_SOURCE}")
-    text = read_text(SKILL_SOURCE)
+    source = get_skill_source()
+    if not source.exists():
+        raise SystemExit(
+            "Error: source not found. Expected concise/SKILL.md next to this repo "
+            f"or at {CODEX_SKILL_SOURCE}"
+        )
+    text = read_text(source)
     parts = text.split("---", 2)
     return parts[2].lstrip("\r\n") if len(parts) >= 3 else text
 
@@ -145,7 +158,7 @@ def cmd_on(level: str | None) -> int:
     print(f"  OK Claude Code: {CLAUDE_MD}")
     print(f"  OK Codex CLI: {CODEX_INSTRUCTIONS}")
     print()
-    print(f"concise default ON (level: {chosen}). Source: {SKILL_SOURCE}")
+    print(f"concise default ON (level: {chosen}). Source: {get_skill_source()}")
     return 0
 
 
@@ -166,7 +179,7 @@ def cmd_off() -> int:
 def cmd_status() -> int:
     level = get_level()
     print(f"concise-default status (saved level: {level}):")
-    print(f"  Source: {SKILL_SOURCE}")
+    print(f"  Source: {get_skill_source()}")
     print(f"  Cursor: {'ON' if CURSOR_RULE.exists() else 'OFF'}")
     claude_on = CLAUDE_MD.exists() and MARKER_START in read_text(CLAUDE_MD)
     print(f"  Claude Code: {'ON' if claude_on else 'OFF'}")

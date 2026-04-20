@@ -1,0 +1,19 @@
+{
+  "name": "concise",
+  "description": "Concise response skills and default-on setup for Codex, Claude Code, and Cursor.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Cpp1022"
+  },
+  "repository": "https://github.com/Cpp1022/concise",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "skill-md",
+    "codex",
+    "claude-code",
+    "cursor-rules",
+    "concise-mode"
+  ],
+  "skills": "."
+}

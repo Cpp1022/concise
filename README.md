@@ -2,12 +2,38 @@
 
 Chinese concise-response skill suite for Codex-style agents.
 
+Make Codex, Claude Code, and Cursor start in concise mode by default, reducing chat noise while preserving technical accuracy.
+
+Suggested GitHub topics:
+
+```text
+agent-skills
+skill-md
+codex
+codex-cli
+claude-code
+cursor-rules
+ai-coding-agent
+concise-mode
+developer-productivity
+```
+
 ## Which should I use?
 
 - Use `concise` when you want the current chat to become concise.
 - Use `concise-default` when you want every new chat to start concise.
 
 `concise` controls response style. `concise-default` is a setup helper that installs that style into new-session instructions.
+
+## Platform support
+
+| Platform | Status | Notes |
+| --- | --- | --- |
+| Codex CLI | Supported | Native `SKILL.md` install target. `concise-default` writes `~/.codex/instructions.md`. |
+| Claude Code | Supported as target | `concise-default` writes a managed block in `~/.claude/CLAUDE.md`. The repo includes a Claude Code plugin manifest. |
+| Cursor | Supported as rules target | `concise-default` writes `~/.cursor/rules/concise.mdc`. Cursor uses Rules, not native `SKILL.md`. |
+| OpenCode | SKILL.md-compatible, not yet a target | OpenCode can load `SKILL.md` from supported skill paths, but `concise-default` does not yet write OpenCode defaults. |
+| GitHub Copilot / VS Code | SKILL.md-compatible, not yet a target | Copilot skills use `.github/skills/` or `~/.copilot/skills/`; `concise-default` does not yet write Copilot defaults. |
 
 ## Install
 
@@ -53,6 +79,42 @@ chmod +x ~/.codex/bin/concise-default
 ```
 
 Add `~/.codex/bin` to `PATH`, or run the wrapper by full path.
+
+### Other agent locations
+
+These locations install the `SKILL.md` files for discovery. The `concise-default` command still needs the wrapper from `concise-default/scripts/` on `PATH` if you want shell toggles.
+
+Claude Code:
+
+```sh
+mkdir -p ~/.claude/skills
+cp -r concise ~/.claude/skills/concise
+cp -r concise-default ~/.claude/skills/concise-default
+```
+
+OpenCode:
+
+```sh
+mkdir -p ~/.config/opencode/skills
+cp -r concise ~/.config/opencode/skills/concise
+cp -r concise-default ~/.config/opencode/skills/concise-default
+```
+
+GitHub Copilot / VS Code:
+
+```sh
+mkdir -p ~/.copilot/skills
+cp -r concise ~/.copilot/skills/concise
+cp -r concise-default ~/.copilot/skills/concise-default
+```
+
+Project-level Copilot skills can also live under `.github/skills/`.
+
+Cursor does not load `SKILL.md` directly. Use `concise-default on` to generate `~/.cursor/rules/concise.mdc`.
+
+### Claude Code plugin
+
+This repository includes `.claude-plugin/plugin.json`, so it can be used as a Claude Code plugin source or listed from a Claude Code plugin marketplace. For a marketplace listing, point the plugin source at this GitHub repository.
 
 ## Usage
 
@@ -115,6 +177,27 @@ Codex detail: `concise-default on` writes the full `concise` skill body into `~/
 - `Codex CLI: ON`: `~/.codex/instructions.md` exists.
 - `Codex App: ON`: the most recent Codex session appears to include that instruction text.
 
+## Distribution
+
+This repo is structured for skill directories and marketplaces that accept `SKILL.md`-based agent skills.
+
+Initial publishing targets:
+
+- SkillsMD
+- Skillzwave
+- SKILLS.pub
+- Bogen
+
+After collecting usage feedback:
+
+- OpenAI Skills Catalog
+- LLMSkills
+- Agent Skills Finder
+- Cursor rules directories and awesome lists
+- GitHub Copilot / VS Code awesome lists
+
+When submitting, link to this GitHub repository as the source of truth. Marketplace pages should describe `Codex CLI` as the primary supported platform, with `Claude Code` and `Cursor Rules` as generated default targets.
+
 ## Boundaries
 
 The skill intentionally relaxes compression when clarity matters more:
@@ -152,6 +235,8 @@ inline obj prop -> new ref -> re-render. Wrap with useMemo.
 
 ```text
 .
+|-- .claude-plugin/
+|   `-- plugin.json
 |-- concise/
 |   `-- SKILL.md
 |-- concise-default/
@@ -161,9 +246,6 @@ inline obj prop -> new ref -> re-render. Wrap with useMemo.
 |       |-- concise-default.cmd
 |       `-- concise-default.sh
 |-- README.md
-|-- CHANGELOG.md
-|-- CONTRIBUTING.md
-|-- SECURITY.md
 |-- LICENSE
 `-- .gitignore
 ```
