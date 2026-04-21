@@ -1,10 +1,6 @@
 ---
 name: concise
-description: >
-  超压缩表达模式。尽量省 token，同时保留技术信息与判断精度。
-  支持强度：lite、ultra（默认）。
-  用户说“concise mode”“use concise”“less tokens”“be brief”，
-  或调用 /concise 时启用。需要省 token 时也可自动触发。
+description: Use when the user asks for shorter, denser, token-efficient replies — especially in Chinese. Triggers on "concise mode", "concise 模式", "use concise", "be brief", "less tokens", "少废话", "简洁模式", "精简模式", "/concise", "/concise lite", "/concise ultra", "stop concise", "normal mode", or when the user is annoyed by verbose answers. Chinese-first two-level compression (expression + content) that preserves code, errors, parameters, and decision quality; auto-relaxes for safety warnings, multi-step procedures, and ambiguous cases.
 ---
 
 答复要像“高密度简洁”。信息不丢，废话先死。

@@ -1,9 +1,6 @@
 ---
 name: concise-default
-description: >
-  Toggle concise auto-activation for all new sessions across Cursor, Claude Code, and Codex CLI.
-  Trigger: "concise-default", "concise default on", "concise default off",
-  "concise-default status", "concise always on", "默认concise", "开启默认concise", "关闭默认concise".
+description: Use when the user wants concise mode to be the default for every new chat across Codex CLI, Claude Code, and Cursor. Triggers on "concise default", "default concise", "make concise the default", "concise-default on", "concise-default off", "concise-default status", "concise always on", "开启默认concise", "默认concise", "每次都concise", "/concise-default". Writes ~/.codex/instructions.md, a managed block in ~/.claude/CLAUDE.md, and ~/.cursor/rules/concise.mdc.
 ---
 
 # Concise Default

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://developers.openai.com/codex/plugins/marketplace.schema.json",
+  "name": "concise-marketplace",
+  "description": "Chinese-first concise mode skills for Codex CLI.",
+  "owner": "Cyy <2791596341@qq.com>",
+  "plugins": [
+    {
+      "id": "concise",
+      "name": "concise",
+      "version": "0.1.0",
+      "description": "Chinese-first concise mode. Shorter and denser replies without losing technical accuracy. Supports /concise, /concise lite, /concise ultra, stop concise.",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Cpp1022/concise.git",
+        "ref": "main",
+        "path": "concise"
+      },
+      "install": {
+        "skills": [
+          {
+            "from": "SKILL.md",
+            "to": "~/.codex/skills/concise/SKILL.md"
+          }
+        ]
+      },
+      "tags": ["skill", "concise", "chinese", "style", "prompting"]
+    },
+    {
+      "id": "concise-default",
+      "name": "concise-default",
+      "version": "0.1.0",
+      "description": "Turn concise mode on by default for every new chat across Codex CLI, Claude Code, and Cursor.",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/Cpp1022/concise.git",
+        "ref": "main",
+        "path": "concise-default"
+      },
+      "install": {
+        "skills": [
+          {
+            "from": "SKILL.md",
+            "to": "~/.codex/skills/concise-default/SKILL.md"
+          }
+        ],
+        "bin": [
+          {
+            "from": "scripts/concise-default.py",
+            "to": "~/.codex/bin/concise-default.py"
+          },
+          {
+            "from": "scripts/concise-default.sh",
+            "to": "~/.codex/bin/concise-default",
+            "chmod": "0755"
+          }
+        ]
+      },
+      "tags": ["skill", "setup", "default", "cross-platform"]
+    }
+  ]
+}

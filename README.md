@@ -1,8 +1,48 @@
-﻿# concise
+# concise
 
-Chinese concise-response skill suite for Codex-style agents.
+> A Chinese-first `SKILL.md` for AI coding agents.
+> 让 Claude Code / Codex CLI / Cursor 用中文回复更短更密，不丢技术判断。
 
-Make Codex, Claude Code, and Cursor start in concise mode by default, reducing chat noise while preserving technical accuracy.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![platforms](https://img.shields.io/badge/platforms-Codex%20CLI%20%7C%20Claude%20Code%20%7C%20Cursor-green)
+
+## 30-second install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh
+# or: enable "every new chat starts concise" in addition to installing the skill
+curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh -s -- --default ultra
+```
+
+In chat:
+
+```text
+/concise          # enable ultra (default) for this chat
+/concise lite     # expression compression only
+/concise ultra    # expression + content compression
+stop concise      # back to normal
+```
+
+## Why concise?
+
+- **Chinese-first**: tuned for Chinese technical writing; `ultra` cuts 60-80% of non-code tokens in Chinese, 20-30% in English.
+- **Preserves precision**: code blocks, error output, command parameters, commit messages, and PR bodies stay verbatim.
+- **Auto-relax**: backs off compression for safety warnings, multi-step procedures, parameter-heavy explanations, and ambiguous cases.
+- **Cross-agent**: one `SKILL.md`, three install targets — Codex CLI, Claude Code, Cursor.
+
+## FAQ
+
+**Q: How is this different from a "be brief" system prompt?**
+A: "Be brief" compresses wording but keeps the same output structure (intro / sections / recap). concise strips the structure too, and separates expression compression from content compression, so precision doesn't drop with filler.
+
+**Q: Will this make the agent think less?**
+A: No. The skill only controls output style, not tool use or reasoning depth. TDD, debugging, and brainstorming workflows auto-relax when they need to expand.
+
+**Q: Does it conflict with my own Cursor rules?**
+A: No. concise lives at the response-style layer; your project rules live at the code-style / architecture layer. Both can be on at the same time.
+
+**Q: Can I enable it only for specific chats?**
+A: Yes. Install only `concise` (not `concise-default`), then use `/concise` in the chats where you want it.
 
 Suggested GitHub topics:
 
