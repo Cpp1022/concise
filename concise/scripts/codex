@@ -1,0 +1,77 @@
+#!/usr/bin/env sh
+set -eu
+
+SELF="$0"
+SKILL_DIR="$HOME/.codex/skills/concise"
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+
+resolve_real_codex() {
+  old_ifs=$IFS
+  IFS=:
+  for dir in $PATH; do
+    [ -n "$dir" ] || continue
+    candidate="$dir/codex"
+    [ -x "$candidate" ] || continue
+    if python3 - "$SELF" "$candidate" <<'PY'
+from pathlib import Path
+import sys
+try:
+    sys.exit(0 if Path(sys.argv[1]).resolve() != Path(sys.argv[2]).resolve() else 1)
+except OSError:
+    sys.exit(1)
+PY
+    then
+      printf '%s\n' "$candidate"
+      IFS=$old_ifs
+      return 0
+    fi
+  done
+  IFS=$old_ifs
+
+  for candidate in /usr/bin/codex /usr/local/bin/codex "$HOME/.npm-global/bin/codex" "$HOME/.local/bin/codex"; do
+    if [ -x "$candidate" ] && [ "$candidate" != "$SELF" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+render_concise() {
+  python3 - "$SKILL_DIR" <<'PY'
+from pathlib import Path
+import sys
+
+skill_dir = Path(sys.argv[1])
+parts = []
+for name in ("REINFORCE.md", "DETAIL.md"):
+    path = skill_dir / name
+    if path.exists():
+        parts.append(path.read_text(encoding="utf-8-sig").strip())
+if not parts:
+    path = skill_dir / "SKILL.md"
+    if not path.exists():
+        raise SystemExit("codex wrapper: concise skill not found")
+    text = path.read_text(encoding="utf-8-sig")
+    chunks = text.split("---", 2)
+    body = chunks[2].lstrip("\r\n") if len(chunks) >= 3 else text
+    parts.append(body.strip())
+print("\n\n".join(part for part in parts if part).rstrip() + "\n")
+PY
+}
+
+REAL_CODEX=$(resolve_real_codex) || {
+  echo "codex wrapper: real codex not found" >&2
+  exit 127
+}
+
+render_concise > "$TMPFILE"
+for f in AGENTS.md AGENTS.override.md; do
+  if [ -f "$f" ]; then
+    printf '\n\n' >> "$TMPFILE"
+    cat "$f" >> "$TMPFILE"
+  fi
+done
+
+exec "$REAL_CODEX" -c "model_instructions_file=\"$TMPFILE\"" "$@"

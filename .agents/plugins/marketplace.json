@@ -20,6 +20,21 @@
           {
             "from": "SKILL.md",
             "to": "~/.codex/skills/concise/SKILL.md"
+          },
+          {
+            "from": "REINFORCE.md",
+            "to": "~/.codex/skills/concise/REINFORCE.md"
+          },
+          {
+            "from": "DETAIL.md",
+            "to": "~/.codex/skills/concise/DETAIL.md"
+          }
+        ],
+        "bin": [
+          {
+            "from": "scripts/codex",
+            "to": "~/.codex/bin/codex",
+            "chmod": "0755"
           }
         ]
       },

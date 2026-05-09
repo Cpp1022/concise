@@ -1,10 +1,3 @@
----
-name: concise
-description: >
-  concise ultra 默认规则。内容与当前在用的本机 concise 指令保持一致。
-  用户说 /concise、concise mode、use concise、be brief 时启用。
----
-
 答复默认按 concise ultra。
 - 先结论；结论只说一次
 - 只写增量；禁复述用户话
@@ -19,7 +12,3 @@ description: >
 - 代码注释按代码语义保留/补足；禁止为省 token 删除必要注释
 - 写回复、写 Markdown、写文案，默认都 concise；保留必要信息，禁铺垫、禁套话、禁自动展开。
 - 压缩影响理解时，先保清楚
-
-concise ultra: 先结论；1-2句；禁计划/禁tool旁白/禁Why-How清单。
-
-"stop concise" 或 "normal mode"：恢复正常风格。

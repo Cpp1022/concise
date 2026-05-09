@@ -11,10 +11,18 @@ HOME = Path.home()
 CONFIG_FILE = HOME / ".config" / "concise" / "config"
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_SKILL_SOURCE = SCRIPT_DIR.parent.parent / "concise" / "SKILL.md"
+REPO_REINFORCE_SOURCE = SCRIPT_DIR.parent.parent / "concise" / "REINFORCE.md"
+REPO_DETAIL_SOURCE = SCRIPT_DIR.parent.parent / "concise" / "DETAIL.md"
 CODEX_SKILL_SOURCE = HOME / ".codex" / "skills" / "concise" / "SKILL.md"
-CURSOR_RULE = HOME / ".cursor" / "rules" / "concise.mdc"
+CODEX_REINFORCE_SOURCE = HOME / ".codex" / "skills" / "concise" / "REINFORCE.md"
+CODEX_DETAIL_SOURCE = HOME / ".codex" / "skills" / "concise" / "DETAIL.md"
+CURSOR_RULE = HOME / ".cursor" / "rules" / "concise.mdc"  # legacy single-file target
+CURSOR_REINFORCE_RULE = HOME / ".cursor" / "rules" / "concise-reinforce.mdc"
+CURSOR_DETAIL_RULE = HOME / ".cursor" / "rules" / "concise-detail.mdc"
 CLAUDE_MD = HOME / ".claude" / "CLAUDE.md"
 CODEX_INSTRUCTIONS = HOME / ".codex" / "instructions.md"
+CODEX_INSTRUCTIONS_REINFORCE = HOME / ".codex" / "instructions.reinforce.md"
+CODEX_INSTRUCTIONS_DETAIL = HOME / ".codex" / "instructions.detail.md"
 CODEX_SESSIONS = HOME / ".codex" / "sessions"
 MARKER_START = "# >>> concise-default >>>"
 MARKER_END = "# <<< concise-default <<<"
@@ -61,18 +69,36 @@ def read_skill_body() -> str:
     return parts[2].lstrip("\r\n") if len(parts) >= 3 else text
 
 
+def read_layered_parts(level: str) -> tuple[str, str]:
+    reinforce = ""
+    detail = ""
+    for path in (REPO_REINFORCE_SOURCE, CODEX_REINFORCE_SOURCE):
+        if path.exists():
+            reinforce = read_text(path).strip()
+            break
+    for path in (REPO_DETAIL_SOURCE, CODEX_DETAIL_SOURCE):
+        if path.exists():
+            detail = read_text(path).strip()
+            break
+    if reinforce or detail:
+        reinforce_text = patch_level((reinforce + "\n") if reinforce else "", level).rstrip() + ("\n" if reinforce else "")
+        detail_text = patch_level((detail + "\n") if detail else "", level).rstrip() + ("\n" if detail else "")
+        return reinforce_text, detail_text
+    # Backward compatibility: SKILL-only mode maps to detail layer.
+    return "", patch_level(read_skill_body(), level).rstrip() + "\n"
+
+
 def patch_level(body: str, level: str) -> str:
     body = re.sub(r"默认：\*\*(lite|ultra)\*\*", f"默认：**{level}**", body)
     body = re.sub(r"默认:\s*\*\*(lite|ultra)\*\*", f"默认：**{level}**", body)
     return body
 
 
-def gen_cursor_content(level: str) -> str:
-    body = patch_level(read_skill_body(), level)
+def gen_cursor_content(level: str, body: str, layer_name: str) -> str:
     return "\n".join(
         [
             "---",
-            f'description: "Concise mode ({level})"',
+            f'description: "{layer_name} ({level})"',
             "alwaysApply: true",
             "---",
             body.rstrip(),
@@ -81,8 +107,9 @@ def gen_cursor_content(level: str) -> str:
     )
 
 
-def gen_plain_content(level: str) -> str:
-    return patch_level(read_skill_body(), level).rstrip() + "\n"
+def gen_plain_content(reinforce: str, detail: str) -> str:
+    parts = [p.rstrip() for p in (reinforce, detail) if p and p.strip()]
+    return ("\n\n".join(parts) + "\n") if parts else ""
 
 
 def first_signal_line(path: Path) -> str | None:
@@ -150,13 +177,41 @@ def cmd_on(level: str | None) -> int:
     if chosen not in {"lite", "ultra"}:
         raise SystemExit(f"Error: level must be lite or ultra (got: {chosen})")
     save_level(chosen)
-    write_text(CURSOR_RULE, gen_cursor_content(chosen))
+
+    reinforce, detail = read_layered_parts(chosen)
+
+    if reinforce.strip():
+        write_text(CURSOR_REINFORCE_RULE, gen_cursor_content(chosen, reinforce, "Concise reinforce"))
+    elif CURSOR_REINFORCE_RULE.exists():
+        CURSOR_REINFORCE_RULE.unlink()
+
+    if detail.strip():
+        write_text(CURSOR_DETAIL_RULE, gen_cursor_content(chosen, detail, "Concise detail"))
+    elif CURSOR_DETAIL_RULE.exists():
+        CURSOR_DETAIL_RULE.unlink()
+
+    if CURSOR_RULE.exists():
+        CURSOR_RULE.unlink()
+
     remove_marked_block(CLAUDE_MD)
-    inject_marked_block(CLAUDE_MD, gen_plain_content(chosen))
-    write_text(CODEX_INSTRUCTIONS, gen_plain_content(chosen))
-    print(f"  OK Cursor: {CURSOR_RULE}")
+    inject_marked_block(CLAUDE_MD, gen_plain_content(reinforce, detail))
+
+    if reinforce.strip():
+        write_text(CODEX_INSTRUCTIONS_REINFORCE, reinforce)
+    elif CODEX_INSTRUCTIONS_REINFORCE.exists():
+        CODEX_INSTRUCTIONS_REINFORCE.unlink()
+
+    if detail.strip():
+        write_text(CODEX_INSTRUCTIONS_DETAIL, detail)
+    elif CODEX_INSTRUCTIONS_DETAIL.exists():
+        CODEX_INSTRUCTIONS_DETAIL.unlink()
+
+    # Backward compatibility for tools reading single default path.
+    write_text(CODEX_INSTRUCTIONS, gen_plain_content(reinforce, detail))
+
+    print(f"  OK Cursor: {CURSOR_REINFORCE_RULE}, {CURSOR_DETAIL_RULE}")
     print(f"  OK Claude Code: {CLAUDE_MD}")
-    print(f"  OK Codex CLI: {CODEX_INSTRUCTIONS}")
+    print(f"  OK Codex CLI: {CODEX_INSTRUCTIONS_REINFORCE}, {CODEX_INSTRUCTIONS_DETAIL}")
     print()
     print(f"concise default ON (level: {chosen}). Source: {get_skill_source()}")
     return 0
@@ -165,9 +220,17 @@ def cmd_on(level: str | None) -> int:
 def cmd_off() -> int:
     if CURSOR_RULE.exists():
         CURSOR_RULE.unlink()
+    if CURSOR_REINFORCE_RULE.exists():
+        CURSOR_REINFORCE_RULE.unlink()
+    if CURSOR_DETAIL_RULE.exists():
+        CURSOR_DETAIL_RULE.unlink()
     remove_marked_block(CLAUDE_MD)
     if CODEX_INSTRUCTIONS.exists():
         CODEX_INSTRUCTIONS.unlink()
+    if CODEX_INSTRUCTIONS_REINFORCE.exists():
+        CODEX_INSTRUCTIONS_REINFORCE.unlink()
+    if CODEX_INSTRUCTIONS_DETAIL.exists():
+        CODEX_INSTRUCTIONS_DETAIL.unlink()
     print("  OK Cursor: removed")
     print("  OK Claude Code: removed")
     print("  OK Codex CLI: removed")
@@ -180,10 +243,12 @@ def cmd_status() -> int:
     level = get_level()
     print(f"concise-default status (saved level: {level}):")
     print(f"  Source: {get_skill_source()}")
-    print(f"  Cursor: {'ON' if CURSOR_RULE.exists() else 'OFF'}")
+    cursor_on = CURSOR_REINFORCE_RULE.exists() or CURSOR_DETAIL_RULE.exists() or CURSOR_RULE.exists()
+    print(f"  Cursor: {'ON' if cursor_on else 'OFF'}")
     claude_on = CLAUDE_MD.exists() and MARKER_START in read_text(CLAUDE_MD)
     print(f"  Claude Code: {'ON' if claude_on else 'OFF'}")
-    print(f"  Codex CLI: {'ON' if CODEX_INSTRUCTIONS.exists() else 'OFF'}")
+    codex_on = CODEX_INSTRUCTIONS_REINFORCE.exists() or CODEX_INSTRUCTIONS_DETAIL.exists() or CODEX_INSTRUCTIONS.exists()
+    print(f"  Codex CLI: {'ON' if codex_on else 'OFF'}")
     print(
         f"  Codex App: {'ON' if codex_app_on_from_last_session(CODEX_SESSIONS, CODEX_INSTRUCTIONS) else 'OFF'}"
     )

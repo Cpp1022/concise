@@ -3,11 +3,11 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh
-#   curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh -s -- --default ultra
+#   curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh -s -- --default lite
 #
 # Installs the `concise` skill into every supported agent location.
-# Optional: --default <lite|ultra> also installs the `concise-default` wrapper
-# and turns concise on for all new sessions.
+# Default behavior: installs the Codex CLI wrapper that injects concise + AGENTS.md on every run.
+# Optional: --default <lite|ultra> also installs `concise-default` for generated defaults on Cursor / Claude Code / Codex App.
 
 set -e
 
@@ -18,8 +18,14 @@ DEFAULT_LEVEL=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --default)
-      shift
-      DEFAULT_LEVEL="${1:-ultra}"
+      if [ $# -ge 2 ] && [ "${2#--}" = "$2" ]; then
+        DEFAULT_LEVEL="$2"
+        shift 2
+      else
+        DEFAULT_LEVEL="ultra"
+        shift
+      fi
+      continue
       ;;
     --default=*)
       DEFAULT_LEVEL="${1#--default=}"
@@ -40,6 +46,9 @@ fetch() {
 
 echo "==> downloading skill sources"
 fetch "$TMP/concise/SKILL.md"                              "concise/SKILL.md"
+fetch "$TMP/concise/REINFORCE.md"                          "concise/REINFORCE.md"
+fetch "$TMP/concise/DETAIL.md"                             "concise/DETAIL.md"
+fetch "$TMP/concise/scripts/codex"                         "concise/scripts/codex"
 fetch "$TMP/concise-default/SKILL.md"                      "concise-default/SKILL.md"
 fetch "$TMP/concise-default/scripts/concise-default.py"    "concise-default/scripts/concise-default.py"
 fetch "$TMP/concise-default/scripts/concise-default.sh"    "concise-default/scripts/concise-default.sh"
@@ -47,18 +56,21 @@ fetch "$TMP/concise-default/scripts/concise-default.sh"    "concise-default/scri
 install_skill() {
   skill="$1"; dst="$2"
   mkdir -p "$dst"
-  cp "$TMP/$skill/SKILL.md" "$dst/SKILL.md"
-  printf "    installed: %s\n" "$dst/SKILL.md"
+  cp -R "$TMP/$skill/." "$dst/"
+  printf "    installed: %s\n" "$dst/"
 }
 
 echo "==> installing concise skill"
 install_skill concise "$HOME/.codex/skills/concise"
+mkdir -p "$HOME/.codex/bin"
+cp "$TMP/concise/scripts/codex"                            "$HOME/.codex/bin/codex"
+chmod +x "$HOME/.codex/bin/codex"
 [ -d "$HOME/.claude" ]          && install_skill concise "$HOME/.claude/skills/concise"              || true
 [ -d "$HOME/.config/opencode" ] && install_skill concise "$HOME/.config/opencode/skills/concise"     || true
 [ -d "$HOME/.copilot" ]         && install_skill concise "$HOME/.copilot/skills/concise"             || true
 
 if [ -n "$DEFAULT_LEVEL" ]; then
-  echo "==> installing concise-default and enabling level=$DEFAULT_LEVEL"
+  echo "==> installing concise-default and enabling generated defaults level=$DEFAULT_LEVEL"
   mkdir -p "$HOME/.codex/skills/concise-default" "$HOME/.codex/bin"
   cp "$TMP/concise-default/SKILL.md"                      "$HOME/.codex/skills/concise-default/SKILL.md"
   cp "$TMP/concise-default/scripts/concise-default.py"    "$HOME/.codex/bin/concise-default.py"
@@ -74,12 +86,14 @@ cat <<'EOF'
 done.
 
 next:
-  - new chats in Codex / Claude Code / Cursor can now load the `concise` skill
+  - Codex CLI now uses wrapper chain:
+      concise skill -> AGENTS.md -> AGENTS.override.md
   - in-chat:   /concise  |  /concise lite  |  /concise ultra  |  stop concise
-  - default on every new chat:
-      ~/.codex/bin/concise-default on ultra        (if installed via --default)
+  - optional generated defaults:
+      ~/.codex/bin/concise-default on ultra
   - uninstall:
-      rm -rf ~/.codex/skills/concise ~/.claude/skills/concise ~/.cursor/rules/concise.mdc
+      rm -f ~/.codex/bin/codex
+      rm -rf ~/.codex/skills/concise ~/.codex/skills/concise-default ~/.claude/skills/concise
 
 docs: https://github.com/Cpp1022/concise
 EOF
