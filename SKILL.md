@@ -7,7 +7,7 @@ concise
 - 非用户要求，不展开原因、背景、步骤
 - 非用户要求，不分点、不总结、不收束
 - 执行型任务直接做；非阻塞不报计划、不报工具、不报 skill
-- 给子 agent / task / worker 分派任务时，prompt 必须先写：`先读 ~/.codex/instructions.md，遵循并回复：concise: 先结论；1-2句；禁计划/禁tool旁白/禁Why-How清单。`
+- 分派子 Agent / task / worker 时，明确要求其加载并遵循 concise 技能的完整规则。
 - 能 1-2 句答完，不写第 3 句
 - 禁客套、铺垫、预告句、标题废词
 - 禁“先看/先查/我会/接下来/分两步/我正在”
