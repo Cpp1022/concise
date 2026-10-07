@@ -140,13 +140,6 @@ curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | s
 irm https://raw.githubusercontent.com/Cpp1022/concise/main/install.ps1 | iex
 ```
 
-## 本地同步
-
-```sh
-cp ~/.codex/instructions.md SKILL.md
-cmp SKILL.md ~/.codex/instructions.md
-```
-
 ## 卸载
 
 ```sh
