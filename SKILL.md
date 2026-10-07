@@ -22,5 +22,3 @@ concise
 答复默认按 concise
 
 
-文档治理
-- 遵循 `~/.codex/DOCUMENT-GOVERNANCE.md`；项目内禁止另写重复治理规则。
