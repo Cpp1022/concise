@@ -119,7 +119,7 @@ README 的定位很明确：它不只是清单，而是把日程规划、计时�
 
 ## 文档用途索引
 
-- `SKILL.md`：唯一规则源；改规则前读；必须与 `~/.codex/instructions.md` 一致。
+- `SKILL.md`：唯一规则源；改规则前读。
 - `install.sh`：Unix/macOS/Linux 安装入口；启用 Codex 全局默认注入时读；避免手工漏写 hook/config。
 - `install.ps1`：Windows 安装入口；启用 Codex 全局默认注入时读；避免手工漏写 hook/config。
 - `LICENSE`：开源授权条款；分发、引用、改造前读；说明允许的使用边界。
