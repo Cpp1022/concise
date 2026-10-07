@@ -122,10 +122,6 @@ README 的定位很明确：它不只是清单，而是把日程规划、计时�
 - `install.ps1`：Windows 安装入口；启用 Codex 全局默认注入时读；避免手工漏写 hook/config。
 - `LICENSE`：开源授权条款；分发、引用、改造前读；说明允许的使用边界。
 
-## 规则治理
-
-只保留 `SKILL.md` 一个入口；不维护 `concise-default`，不提供等级分档入口。
-
 ## Codex 全局默认注入
 
 Codex 必须同时具备：`~/.codex/instructions.md` 规则全文；`~/.codex/hooks.json` 注册 `UserPromptSubmit` context hook，命令指向 concise hook；`~/.codex/config.toml` 含 `[features] codex_hooks = true`。
