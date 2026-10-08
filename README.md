@@ -25,7 +25,7 @@ concise 使用同一套表达规则，不同 Agent 的安装和生效方式不�
 
 ### Codex
 
-需要 Python 3.11+。安装脚本保留已有指令，在 concise 标记块中写入规则，并配置持续注入。
+需要 Python 3.11+。安装脚本保留已有指令，将完整 concise 规则追加到 Codex 的开发者指令配置，并配置每轮简短提醒。
 
 **Windows PowerShell**
 
@@ -38,6 +38,8 @@ irm https://raw.githubusercontent.com/Cpp1022/concise/main/install.ps1 | iex
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh -s -- codex
 ```
+
+安装完成后新开 Codex 会话加载完整规则；通过 `/hooks` 检查并信任 concise hook 后，启用每轮简短提醒。
 
 ### 其他 Agent
 

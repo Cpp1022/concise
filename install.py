@@ -228,6 +228,108 @@ def config_edit(data, desired):
     return result
 
 
+
+def developer_value(data):
+    value = config(data)[0].get('developer_instructions')
+    if value is not None and not isinstance(value, str):
+        fail('config.toml: developer_instructions must be a string.')
+    return value
+
+
+def developer_edit(data, desired):
+    """Replace only the root string value; verify the full parsed result."""
+    old = text(data)
+    previous = developer_value(data)
+    if previous == desired:
+        return data
+    parsed = config(data)[0]
+    expected = dict(parsed)
+    if desired is None:
+        expected.pop('developer_instructions', None)
+    else:
+        expected['developer_instructions'] = desired
+    newline = '\r\n' if '\r\n' in old else '\n'
+    replacement = json.dumps(desired, ensure_ascii=False) if desired is not None else None
+    candidates = []
+    if previous is None:
+        if desired is not None:
+            candidates.append('developer_instructions = ' + replacement + newline + old)
+    else:
+        pattern = re.compile(r"""(?m)^[ \t]*(?:developer_instructions|"developer_instructions"|'developer_instructions')[ \t]*=[ \t]*""")
+        for match in pattern.finditer(old):
+            start = match.end()
+            if start >= len(old) or old[start] not in ('"', "'"):
+                continue
+            quote = old[start]
+            width = 3 if old.startswith(quote * 3, start) else 1
+            pos = start + width
+            while pos < len(old):
+                if quote == '"' and old[pos] == '\\':
+                    pos += 2
+                    continue
+                if old.startswith(quote * width, pos):
+                    end = pos + width
+                    if width == 3:
+                        while end < len(old) and old[end] == quote:
+                            end += 1
+                    try:
+                        fragment = tomllib.loads('value = ' + old[start:end])
+                    except tomllib.TOMLDecodeError:
+                        break
+                    if fragment.get('value') == previous:
+                        if desired is None:
+                            # Keep trailing comments and unrelated source bytes.
+                            candidates.append(old[:match.start()] + old[end:])
+                        else:
+                            candidates.append(old[:start] + replacement + old[end:])
+                    break
+                pos += 1
+    verified = []
+    for candidate in candidates:
+        try:
+            actual = tomllib.loads(candidate)
+        except tomllib.TOMLDecodeError:
+            continue
+        if actual == expected and candidate not in verified:
+            verified.append(candidate)
+    if len(verified) != 1:
+        fail('Cannot safely edit developer_instructions; configuration was not changed.')
+    result = verified[0].encode('utf-8')
+    return b'\xef\xbb\xbf' + result if data and data.startswith(b'\xef\xbb\xbf') else result
+
+
+def developer_install(data, block, state):
+    parsed = config(data)[0]
+    for profile in parsed.get('profiles', {}).values():
+        if isinstance(profile, dict) and 'developer_instructions' in profile:
+            fail('A profile overrides developer_instructions; review it before installing concise.')
+    previous = developer_value(data)
+    owned = state is not None and state.get('developer_managed', False)
+    if owned:
+        updated = replace_block((previous or '').encode('utf-8'), decode(state['block']), block).decode('utf-8')
+        restore = state['developer_restore'] if previous == developer_value(decode(state['files']['config.toml']['after'])) else replace_block(previous.encode('utf-8'), decode(state['block']), b'').decode('utf-8')
+    else:
+        original = previous or ''
+        if BEGIN in original or END in original:
+            fail('Untracked concise developer instruction markers; no automatic takeover.')
+        separator = '' if not original or original.endswith('\n\n') else ('\n' if original.endswith('\n') else '\n\n')
+        updated = original + separator + block.decode('utf-8') + '\n'
+        restore = previous
+    return developer_edit(data, updated), restore
+
+
+def developer_remove(data, state):
+    if not state.get('developer_managed', False):
+        return data
+    previous = developer_value(data)
+    installed = developer_value(decode(state['files']['config.toml']['after']))
+    if BEGIN not in (previous or '') and END not in (previous or ''):
+        return data  # The user already removed our block; keep their replacement.
+    stripped = replace_block((previous or '').encode('utf-8'), decode(state['block']), b'').decode('utf-8')
+    desired = state['developer_restore'] if previous == installed else stripped
+    return developer_edit(data, desired)
+
+
 def replace_block(data, expected, replacement):
     raw = data or b''
     begin, end = BEGIN.encode(), END.encode()
@@ -353,8 +455,9 @@ def install(root, skill, platform, fault=None):
         separator = b'' if not old or old.endswith(b'\n\n') else (b'\n' if old.endswith(b'\n') else b'\n\n')
         instructions = old + separator + block + b'\n'
     parsed_hooks.setdefault('hooks', {}).setdefault('UserPromptSubmit', []).insert(0, {'hooks': [handler]})
+    configured, developer_restore = developer_install(current['config.toml'], block, state)
     desired = {'instructions.md': instructions, hook_name: hook_body,
-               'hooks.json': json_bytes(parsed_hooks), 'config.toml': config_edit(current['config.toml'], True)}
+               'hooks.json': json_bytes(parsed_hooks), 'config.toml': config_edit(configured, True)}
     files = {} if state is None else state['files']
     restore = {} if state is None else state['restore']
     restore['instructions.md'] = (encode(current['instructions.md']) if state is None else
@@ -366,13 +469,14 @@ def install(root, skill, platform, fault=None):
     original_flag = config(decode(files['config.toml']['before']))[1] if state else config(current['config.toml'])[1]
     restore['config.toml'] = (encode(current['config.toml']) if state is None else
         restore['config.toml'] if current['config.toml'] == decode(files['config.toml']['after']) else
-        encode(config_edit(current['config.toml'], original_flag)))
+        encode(config_edit(developer_remove(current['config.toml'], state), original_flag)))
     for name, after in desired.items():
         files[name] = {'before': files[name]['before'] if name in files else encode(current[name]), 'after': encode(after)}
-    next_state = {'version': 1, 'status': 'installed', 'platform': platform, 'block': encode(block), 'handler': handler, 'files': files, 'restore': restore}
+    next_state = {'developer_managed': True, 'developer_restore': developer_restore, 'version': 1, 'status': 'installed', 'platform': platform, 'block': encode(block), 'handler': handler, 'files': files, 'restore': restore}
     desired[STATE] = json_bytes(next_state)
     transaction(root, desired, fault)
-    print('Installed concise; existing instructions and unrelated configuration were preserved.')
+    print('Installed concise; full rules were appended to developer_instructions, preserving existing instructions.')
+    print('Start a new Codex session to load the configuration. Trust only the concise hook via /hooks to enable its per-turn reminder.')
 
 
 def uninstall(root, fault=None):
@@ -406,13 +510,15 @@ def uninstall(root, fault=None):
     current_flag = config(current_config)[1]
     original_config = decode(files['config.toml']['before'])
     original_flag = config(original_config)[1]
+    without_developer = developer_remove(current_config, state)
     retain = current_flag is not True or (other_hooks(cleaned) and original_flag is not True)
     if retain:
         print('Kept codex_hooks: it was edited or other hooks may depend on it. Recovery data was retained.')
         retained = {'version': 1, 'status': 'retained-config', 'files': {'config.toml': files['config.toml']}}
+        desired['config.toml'] = without_developer
         desired[STATE] = json_bytes(retained)
     else:
-        desired['config.toml'] = decode(state['restore']['config.toml']) if current_config == decode(files['config.toml']['after']) else config_edit(current_config, original_flag)
+        desired['config.toml'] = decode(state['restore']['config.toml']) if current_config == decode(files['config.toml']['after']) else config_edit(without_developer, original_flag)
         desired[STATE] = None
     transaction(root, desired, fault)
     print('Uninstalled concise; unrelated user changes were preserved.')

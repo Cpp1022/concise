@@ -184,4 +184,65 @@ class InstallerTests(unittest.TestCase):
         self.assertFalse(m.config(m.read(self.root,'config.toml'))[1])
         self.assertIsNotNone(m.read(self.root,m.STATE))
 
+    def test_developer_append_restore_and_builtin_preservation(self):
+        original = b'# keep\r\ndeveloper_instructions = "USER RULE" # note\r\nmodel_instructions_file = "existing.md"\r\n[features]\r\ncodex_hooks=true\r\n'
+        self.put('config.toml', original)
+        self.install()
+        config = m.config(m.read(self.root, 'config.toml'))[0]
+        self.assertTrue(config['developer_instructions'].startswith('USER RULE\n\n'))
+        self.assertIn(SKILL.decode('utf-8').rstrip(), config['developer_instructions'])
+        self.assertEqual('existing.md', config['model_instructions_file'])
+        self.assertIn(b'# note', m.read(self.root, 'config.toml'))
+        self.install()
+        self.uninstall()
+        self.assertEqual(original, m.read(self.root, 'config.toml'))
+
+    def test_developer_user_edits_preserved_after_update_uninstall(self):
+        self.install()
+        config = m.read(self.root, 'config.toml')
+        self.put('config.toml', m.developer_edit(config, 'USER PREFIX\n' + m.developer_value(config) + '\nUSER SUFFIX'))
+        self.install(skill=SKILL+b'\nUpdated rule\n')
+        self.uninstall()
+        remaining = m.developer_value(m.read(self.root, 'config.toml'))
+        self.assertIn('USER PREFIX', remaining)
+        self.assertIn('USER SUFFIX', remaining)
+        self.assertNotIn(m.BEGIN, remaining)
+
+    def test_developer_modified_owned_block_stops_uninstall(self):
+        self.install()
+        config = m.read(self.root, 'config.toml')
+        self.put('config.toml', m.developer_edit(config, m.developer_value(config).replace('name: concise', 'name: changed')))
+        before = self.snapshot()
+        with self.assertRaises(Exception): self.uninstall()
+        self.assertEqual(before, self.snapshot())
+
+    def test_developer_toml_string_forms(self):
+        variants = ['developer_instructions = "simple" # comment\n', "'developer_instructions' = 'literal'\n", 'developer_instructions = """\nfirst\nsecond\n"""\n', "developer_instructions = '''\nfirst\nsecond\n'''\n"]
+        for original in variants:
+            with self.subTest(original=original):
+                raw = original.encode('utf-8')
+                value = m.developer_value(raw)
+                updated = m.developer_edit(raw, value + '\nADDED')
+                self.assertEqual(value + '\nADDED', m.developer_value(updated))
+                self.assertEqual(value, m.developer_value(m.developer_edit(updated, value)))
+
+    def test_profile_override_rejected_without_changes(self):
+        self.put('config.toml', b'[profiles.custom]\ndeveloper_instructions="profile"\n')
+        before = self.snapshot()
+        with self.assertRaises(Exception): self.install()
+        self.assertEqual(before, self.snapshot())
+
+    def test_old_installation_record_upgrade(self):
+        self.install()
+        state = m.validate_state(m.read(self.root, m.STATE))
+        for key in ('developer_managed', 'developer_restore'): state.pop(key)
+        no_developer = m.developer_edit(m.read(self.root, 'config.toml'), None)
+        self.put('config.toml', no_developer)
+        state['files']['config.toml']['after'] = m.encode(no_developer)
+        self.put(m.STATE, m.json_bytes(state))
+        self.install()
+        self.assertIn(SKILL.decode().rstrip(), m.developer_value(m.read(self.root, 'config.toml')))
+        self.uninstall()
+        self.assertIsNone(m.read(self.root, 'config.toml'))
+
 if __name__=='__main__':unittest.main(verbosity=2)
