@@ -25,7 +25,7 @@ concise 使用同一套表达规则，不同 Agent 的安装和生效方式不�
 
 ### Codex
 
-安装脚本将 concise 规则写入 Codex 指令文件，并配置持续注入。
+需要 Python 3.11+。安装脚本保留已有指令，在 concise 标记块中写入规则，并配置持续注入。
 
 **Windows PowerShell**
 

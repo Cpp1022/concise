@@ -4,7 +4,7 @@ concise 的表达规则位于 [`skills/concise/SKILL.md`](skills/concise/SKILL.m
 
 ## Codex：默认持续生效
 
-安装脚本负责写入规则及配置持续注入，无需手工设置 hook。
+需要 Python 3.11+（Windows 同样需要；macOS / Linux 使用 `python3`）。安装脚本负责写入规则及配置持续注入，无需手工设置 hook；缺少依赖时，在修改配置前停止。
 
 **Windows PowerShell**
 
@@ -35,18 +35,34 @@ curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | s
 
 使用时明确要求 Agent“使用 concise 技能”；是否自动匹配、是否需要再次调用，取决于平台。
 
-## Codex 配置细节
+## Codex 配置与恢复
 
-Codex 必须同时具备：`~/.codex/instructions.md` 规则全文；`~/.codex/hooks.json` 注册 `UserPromptSubmit` context hook，命令指向 concise hook；`~/.codex/config.toml` 含 `[features] codex_hooks = true`。
+默认配置目录是 `~/.codex`；设置了 `CODEX_HOME` 时使用该目录。
+
+- `instructions.md`：保留已有指令，追加 concise 标记块；更新只替换该块。
+- `hooks.json`：合并 concise 的 `UserPromptSubmit` hook，保留其他 hook；配置解析失败时停止。
+- `config.toml`：将 `[features]` 中的 `codex_hooks` 设为 `true`，保留其他设置与注释。需要修改的设置使用内联表、点分键或文件含多行字符串时，脚本会拒绝自动修改，保留原配置并提示。
+- `.concise-install/state.json`：记录安装前文件的字节快照、安装后内容及恢复依据；不要手动删除。
+- `.concise-install/pending.json`：记录尚未完成的修改；发生可恢复错误时回滚，进程中断后下次运行先检查并恢复。若发现新的用户修改，则停止并保留恢复记录。
+
+重复安装会更新 concise，并保留原始备份及用户新增内容。遇到被修改的 concise 规则块、hook 文件或条目时停止，避免覆盖用户修改。
+
+没有安装记录的旧版内容不会被自动接管或删除；应先备份并核对。旧脚本已经覆盖掉、且没有备份的指令无法自动恢复。
 
 ## Codex 卸载
 
-```sh
-rm -f ~/.codex/instructions.md ~/.codex/hooks/concise-user-prompt-submit.sh
-# 同时删除 ~/.codex/hooks.json 里的 concise UserPromptSubmit 条目；不再需要 hook 时删除 ~/.codex/config.toml 的 codex_hooks 行。
-```
+**Windows PowerShell**
 
 ```powershell
-Remove-Item "$env:USERPROFILE\.codex\instructions.md", "$env:USERPROFILE\.codex\hooks\concise-user-prompt-submit.ps1" -ErrorAction SilentlyContinue
-# 同时删除 $env:USERPROFILE\.codex\hooks.json 里的 concise UserPromptSubmit 条目；不再需要 hook 时删除 config.toml 的 codex_hooks 行。
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Cpp1022/concise/main/install.ps1))) -Action uninstall
 ```
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Cpp1022/concise/main/install.sh | sh -s -- uninstall
+```
+
+卸载只移除 concise 管理的规则块、hook 条目和文件，保留用户其他内容；不要直接删除整个 `instructions.md`。
+
+如果其他 hook 可能依赖 `codex_hooks`，或该设置已被用户修改，卸载会保留当前设置及恢复记录并提示；其余情况下恢复原值。发生冲突时保留备份与记录，不强行覆盖。

@@ -1,105 +1,21 @@
 #!/usr/bin/env sh
-# 用途：安装唯一 concise 规则；新环境启用 Codex 全局默认注入时运行；避免手工漏写 hook/config。
-
-set -e
-
-REPO_RAW="https://raw.githubusercontent.com/Cpp1022/concise/main"
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
-
-case "${1:-codex}" in
-  codex) ;;
-  *) echo "usage: install.sh [codex]" >&2; exit 2 ;;
-esac
-
-mkdir -p "$TMP"
+# Install or uninstall the Codex adapter; the skill itself remains platform-neutral.
+set -eu
+case "${1:-codex}" in codex|uninstall) action="${1:-codex}" ;; *) echo 'usage: install.sh [codex|uninstall]' >&2; exit 2 ;; esac
+command -v python3 >/dev/null 2>&1 || { echo 'concise requires Python 3.11+; no Codex configuration was changed.' >&2; exit 1; }
+python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,11) else 1)' || { echo 'concise requires Python 3.11+; no Codex configuration was changed.' >&2; exit 1; }
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd || pwd)
-if [ -f "$SCRIPT_DIR/skills/concise/SKILL.md" ]; then
-  cp "$SCRIPT_DIR/skills/concise/SKILL.md" "$TMP/SKILL.md"
-else
-  curl -fsSL "$REPO_RAW/skills/concise/SKILL.md" -o "$TMP/SKILL.md"
+if [ -f "$0" ] && [ -f "$SCRIPT_DIR/install.py" ] && { [ "$action" = uninstall ] || [ -f "$SCRIPT_DIR/skills/concise/SKILL.md" ]; }; then
+  exec python3 "$SCRIPT_DIR/install.py" "$action"
 fi
-
-codex_dir="$HOME/.codex"
-hook_dir="$codex_dir/hooks"
-hook_file="$hook_dir/concise-user-prompt-submit.sh"
-hooks_json="$codex_dir/hooks.json"
-config_toml="$codex_dir/config.toml"
-
-mkdir -p "$hook_dir"
-cp "$TMP/SKILL.md" "$codex_dir/instructions.md"
-
-cat > "$hook_file" <<'HOOK'
-#!/usr/bin/env sh
-printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"concise: 先结论；1-2句；禁计划/禁tool旁白/禁Why-How清单。"}}'
-HOOK
-chmod +x "$hook_file"
-
-HOOK_COMMAND='"$HOME/.codex/hooks/concise-user-prompt-submit.sh"' HOOKS_JSON="$hooks_json" python3 - <<'PY'
-import json
-import os
-from pathlib import Path
-
-path = Path(os.environ["HOOKS_JSON"])
-command = os.environ["HOOK_COMMAND"]
-if path.exists():
-    try:
-        data = json.loads(path.read_text())
-    except json.JSONDecodeError:
-        data = {}
-else:
-    data = {}
-
-hooks = data.setdefault("hooks", {})
-event = hooks.setdefault("UserPromptSubmit", [])
-entry = {"hooks": [{"type": "command", "command": command}]}
-
-def has_concise(item):
-    return any("concise-user-prompt-submit" in h.get("command", "") for h in item.get("hooks", []))
-
-event[:] = [item for item in event if not has_concise(item)]
-event.insert(0, entry)
-path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-PY
-
-CONFIG_TOML="$config_toml" python3 - <<'PY'
-import os
-from pathlib import Path
-
-path = Path(os.environ["CONFIG_TOML"])
-text = path.read_text() if path.exists() else ""
-lines = text.splitlines()
-out = []
-in_features = False
-features_seen = False
-codex_seen = False
-
-for line in lines:
-    stripped = line.strip()
-    if stripped.startswith("[") and stripped.endswith("]"):
-        if in_features and not codex_seen:
-            out.append("codex_hooks = true")
-        in_features = stripped == "[features]"
-        if in_features:
-            features_seen = True
-            codex_seen = False
-    if in_features and stripped.startswith("codex_hooks"):
-        out.append("codex_hooks = true")
-        codex_seen = True
-    else:
-        out.append(line)
-
-if in_features and not codex_seen:
-    out.append("codex_hooks = true")
-elif not features_seen:
-    if out and out[-1].strip():
-        out.append("")
-    out.extend(["[features]", "codex_hooks = true"])
-
-path.write_text("\n".join(out).rstrip() + "\n")
-PY
-
-printf 'installed: %s\n' "$codex_dir/instructions.md"
-printf 'installed: %s\n' "$hook_file"
-printf 'updated: %s\n' "$hooks_json"
-printf 'updated: %s\n' "$config_toml"
+command -v curl >/dev/null 2>&1 || { echo 'curl is required to download concise.' >&2; exit 1; }
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT HUP INT TERM
+BASE='https://raw.githubusercontent.com/Cpp1022/concise/main'
+curl -fsSL "$BASE/install.py" -o "$TMP/install.py"
+if [ "$action" = codex ]; then
+  curl -fsSL "$BASE/skills/concise/SKILL.md" -o "$TMP/SKILL.md"
+  python3 "$TMP/install.py" codex --skill-file "$TMP/SKILL.md"
+else
+  python3 "$TMP/install.py" uninstall
+fi
