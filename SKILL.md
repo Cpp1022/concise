@@ -1,3 +1,8 @@
+---
+name: concise
+description: '主要用于精简 Agent 的中文回复：先给结论，减少铺垫、套话、重复内容和无意义黑话。当用户要求简洁回复、少说废话、减少不必要输出，或明确调用 concise 时使用。'
+---
+
 concise: 先结论；1-2句；禁计划/禁tool旁白/禁Why-How清单。
 
 concise
