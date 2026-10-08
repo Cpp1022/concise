@@ -14,10 +14,10 @@ esac
 
 mkdir -p "$TMP"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd || pwd)
-if [ -f "$SCRIPT_DIR/SKILL.md" ]; then
-  cp "$SCRIPT_DIR/SKILL.md" "$TMP/SKILL.md"
+if [ -f "$SCRIPT_DIR/skills/concise/SKILL.md" ]; then
+  cp "$SCRIPT_DIR/skills/concise/SKILL.md" "$TMP/SKILL.md"
 else
-  curl -fsSL "$REPO_RAW/SKILL.md" -o "$TMP/SKILL.md"
+  curl -fsSL "$REPO_RAW/skills/concise/SKILL.md" -o "$TMP/SKILL.md"
 fi
 
 codex_dir="$HOME/.codex"

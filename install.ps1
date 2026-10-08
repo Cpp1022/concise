@@ -10,11 +10,11 @@ New-Item -ItemType Directory -Path $TempDir -Force | Out-Null
 try {
     $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $SkillFile = Join-Path $TempDir 'SKILL.md'
-    $LocalSkill = Join-Path $ScriptDir 'SKILL.md'
+    $LocalSkill = Join-Path $ScriptDir 'skills/concise/SKILL.md'
     if (Test-Path $LocalSkill) {
         Copy-Item $LocalSkill $SkillFile -Force
     } else {
-        Invoke-WebRequest -UseBasicParsing "$RepoRaw/SKILL.md" -OutFile $SkillFile
+        Invoke-WebRequest -UseBasicParsing "$RepoRaw/skills/concise/SKILL.md" -OutFile $SkillFile
     }
 
     $CodexDir = Join-Path $UserHome '.codex'

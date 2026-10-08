@@ -2,7 +2,7 @@
 
 concise 是一个主要针对 Agent 中文回复的简洁表达技能：先给结论，减少冗长铺垫、套话、重复内容和无意义黑话，让中文回答更直接、更好读，降低阅读负担。
 
-**concise 提供通用的中文简洁表达规则。** Codex 版安装后默认持续注入，无需每轮提醒；其他支持技能加载的 Agent 可使用 `SKILL.md`，持续生效方式与遵循程度取决于平台。
+**concise 提供通用的中文简洁表达规则。** Codex 版安装后默认持续注入，无需每轮提醒；其他支持技能加载的 Agent 可使用 [`skills/concise/SKILL.md`](skills/concise/SKILL.md)，持续生效方式与遵循程度取决于平台。
 
 ## 回复篇幅与 token 对比
 
@@ -18,7 +18,7 @@ concise 是一个主要针对 Agent 中文回复的简洁表达技能：先给�
 
 ## 文档用途索引
 
-- `SKILL.md`：唯一规则源；改规则前读。
+- [`skills/concise/SKILL.md`](skills/concise/SKILL.md)：唯一规则源；改规则前读。
 - `install.sh`：Unix/macOS/Linux 安装入口；启用 Codex 全局默认注入时读；避免手工漏写 hook/config。
 - `install.ps1`：Windows 安装入口；启用 Codex 全局默认注入时读；避免手工漏写 hook/config。
 - `LICENSE`：开源授权条款；分发、引用、改造前读；说明允许的使用边界。
